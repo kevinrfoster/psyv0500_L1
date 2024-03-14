@@ -1,0 +1,105 @@
+---
+title: "Lab 5"
+output: github_document
+---
+
+## PSY V0500 Statistical Methods in Psychology
+## Kevin R Foster, Colin Powell School, the City College of New York, CUNY
+
+For this lab, we do some regression models to explain cannabis use. We want to explore risk factors and moderators. As usual we'll use the BRFSS data.
+
+These issues are considered in research done by faculty here, such as:
+
+* Ruglass, Shevorykin, Dambreville, Melara (2018)
+* Rudenstine, Espinosa, & Kumar (2020)
+* Ruglass, Espinosa, et al (2020)
+* Espinosa, Bonner, Alexander (2021)
+
+Form a group. Groups should prepare a 4-min presentation by one of the group members about their experiment process and results. You get 85 min to prepare. Next homework assignment will ask you to go deeper.
+
+Make sure you're stepping up your coding -- at minimum, by now you should have your code as R-Script (in top left panel of R Studio) so that you can easily see what you run (CTRL-Enter is an easy shortcut). If you get significant errors then stop and re-run your code from a fresh start (clear memory, re-load data) so that you don't pile one mistake on top of another. When you submit homework, I'll want to see a file with your code and another with the output from that code. It would be even better to submit an R-Markdown file with code and text, where text tells the story clearly, along with that output -- but I understand that not everybody is that far along yet.
+
+You can use `ggplot` to take a look at some correlates. Let me give you some code to start. You can run this yourself to start, then make changes.
+
+```{r eval = FALSE}
+# first want to make some factors into numbers
+brfss22$Age_midpt <- fct_recode(brfss22$X_AGEG5YR, "21" = "Age 18 to 24",
+                                      "27" = "Age 25 to 29", "32" = "Age 30 to 34",
+                                      "37" = "Age 35 to 39", "42" = "Age 40 to 44",
+                                      "47" = "Age 45 to 49", "52" = "Age 50 to 54",
+                                      "57" = "Age 55 to 59", "62" = "Age 60 to 64",
+                                      "67" = "Age 65 to 69", "72" = "Age 70 to 74",
+                                      "77" = "Age 75 to 79", "82" = "Age 80 or older",
+                                      NULL = "Dont know/Refused/Missing")
+brfss22$Age_midpt <- as.numeric(levels(brfss22$Age_midpt))[brfss22$Age_midpt]
+brfss22$income_midpoint <- fct_recode(brfss22$INCOME3, 
+                        "7500" = "Household income less than $10,000",
+                        "12500" = "Less than $15,000 ($10,000 to less than $15,000)",
+                        "17500" = "Less than $20,000 ($15,000 to less than $20,000) ",
+                        "22500" = "Less than $25,000 ($20,000 to less than $25,000) ",
+                        "30000" = "Less than $35,000 ($25,000 to less than $35,000) ",
+                        "42500" = "Less than $50,000 ($35,000 to less than $50,000) ",
+                        "62500" = "Less than $75,000 ($50,000 to less than $75,000)",
+                        "87500" = "Less than $100,000 ($75,000 to less than $100,000)",
+                        "125000" = "Less than $150,000 ($100,000 to less than $150,000)",
+                        "175000" = "Less than $200,000 ($150,000 to less than $200,000)",
+                        "210000" = "$200,000 or more",
+                        NULL = "Dont know/Not sure",
+                        NULL = "Refused")
+brfss22$income_midpoint <- as.numeric(levels(brfss22$income_midpoint))[brfss22$income_midpoint]
+
+brfss22$Educ_number <- fct_recode(brfss22$EDUCA, 
+                                  "0" = "Never attended school or only kindergarten", 
+                                  "4.5" = "Grades 1 through 8 (Elementary)",
+                                  "10" = "Grades 9 through 11 (Some high school)",
+                                  "12" = "Grade 12 or GED (High school graduate)",
+                                  "14" = "College 1 year to 3 years (Some college or technical school)",
+                                  "16" = "College 4 years or more (College graduate)",
+                                  NULL = "Refused" )
+brfss22$Educ_number <- as.numeric(levels(brfss22$Educ_number))[brfss22$Educ_number]
+
+# this level name can create problems later so fix it here
+levels(brfss_marijan$X_PRACE2)[7] <- "dont know not sure"
+
+select1 <- !is.na(brfss22$MARIJAN1)
+brfss_marijan <- subset(brfss22, select1 )
+
+
+p_cannabis_age <- ggplot(data = brfss_marijan,
+                       mapping = aes(x = Age_midpt,
+                                     y = MARIJAN1))
+p_cannabis_age + geom_smooth()
+
+
+```
+
+Consider representing that as a linear regression. For example,
+
+```{r eval = FALSE}
+model_1 <- lm(MARIJAN1 ~ Age_midpt, data = brfss_marijan)
+summary(model_1)
+
+```
+
+Then extend the regression -- how important is race? ethnicity? education?
+
+```{r eval = FALSE}
+model_2 <- lm(MARIJAN1 ~ Age_midpt + X_PRACE2 + X_HISPANC + EDUCA, data = brfss_marijan)
+summary(model_2)
+
+# maybe get fancy
+require(stargazer)
+stargazer(model_2, type = "text")
+# play with stargazer instead of summary, it can look nicer!
+# it might throw an error at top but then work fine, just ignore it
+
+```
+The R-squared is really low, of course -- that's typical for this type of data.
+
+For your analysis, you have 2 main things to explore: what additional information could you include in the regression, that would help predict cannabis use? What subgroups have different relationships?
+
+For example, *Espinosa, Bonner, Alexander (2021)* restrict attention to just Hispanic people, as they consider the impacts of Adverse Childhood Experiences on cannabis use. You could split the sample into Hispanic or non, then run regressions on each group to explore differences. You could split on other variables. *Ruglass, Espinosa, et al (2020)* and *Rudenstine, Espinosa, & Kumar (2020)* look at the link from depression to cannabis use so you could explore that. Other studies look at exercise and health. From your classes and knowledge about the world you can surely think of other variables in this data which might be relevant. Follow your curiosity! 
+
+Are there sets of variables that really increase the R-squared (so really help predict)? Are there other variables that don't help (even if we think they should)? Think about which results confirm what is known versus which results are surprising.
+
+
